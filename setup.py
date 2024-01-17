@@ -40,7 +40,7 @@ setup(
     version=floggit.__version__,
     author="dcyd, inc.",
     author_email="info@dcyd.io",
-    description="python client to log function inputs and outputs",
+    description="log function inputs and outputs at runtime",
     long_description=__doc__,
     long_description_content_type="text/markdown",
     url="https://github.com/dcyd-inc/floggit",
