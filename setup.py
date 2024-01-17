@@ -8,13 +8,13 @@ Requires Python 3
 ### Using pip
 
 ```
-pip3 install loggit -U
+pip3 install floggit -U
 ```
 
 ### Using pipenv
 
 ```
-pipenv install loggit
+pipenv install floggit
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ pipenv install loggit
 ### Simple monitoring
 
 ```python
-from loggit import log
+from floggit import flog
 
 @flog
 def myfunc(*args, **kwargs):
