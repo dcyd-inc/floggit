@@ -24,7 +24,7 @@ pipenv install loggit
 ```python
 from loggit import log
 
-@log
+@flog
 def myfunc(*args, **kwargs):
     ...
     return result
@@ -57,5 +57,5 @@ setup(
     tests_require=[
         'pytest',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.9'
 )
