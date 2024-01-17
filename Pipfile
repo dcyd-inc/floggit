@@ -4,13 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-google-cloud-logging = "2.2.0"
-requests = "*"
+google-cloud-logging = "*" 
+Flask = "*" 
+networkx = "*" 
 
 [dev-packages]
-setuptools = "*"
-twine = "*"
-wheel = "*"
+setuptools = "*" 
+twine = "*" 
+wheel = "*" 
 
 [requires]
 python_version = "3.11"
