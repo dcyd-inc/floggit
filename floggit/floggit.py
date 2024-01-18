@@ -11,6 +11,7 @@ from flask import request
 import networkx as nx
 
 
+logger = None
 
 if os.environ.get("NO_GOOGLE_LOGGING"):
     class LocalFormatter(logging.Formatter):
@@ -25,15 +26,19 @@ if os.environ.get("NO_GOOGLE_LOGGING"):
                 string = super().format(record)
             return string + tb
 
-    hnd = logging.StreamHandler(sys.stdout)
-    hnd.setFormatter(LocalFormatter())
-    logging.root.addHandler(hnd)
-    logging.root.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(LocalFormatter())
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
 else:
-    from google.cloud.logging import Client
-    client = Client()
-    client.setup_logging()
-    logging.root.setLevel(logging.INFO)
+    import google.cloud.logging
+    from google.cloud.logging_v2.handlers import CloudLoggingHandler
+    client = google.cloud.logging.Client()
+    handler = CloudLoggingHandler(client, name='floggit')
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
 
 
 def flog(function=None, is_route=False):
@@ -51,14 +56,12 @@ def flog(function=None, is_route=False):
             else:
                 request_payload = bind_function_arguments(
                         signature=function_signature, args=args, kwargs=kwargs)
-            logging.info(f'> {f}', extra={
-                'json_fields': jsonify_payload(request_payload),
-                'labels': {
-                    'monitor': {
-                        'event_type': 'request',
-                        'function': f,
-                        'matchstr': (ms:=get_random_string())
-                    }
+            logger.info(f'> {f}', extra={
+                'json_fields': {
+                    'args': jsonify_payload(request_payload),
+                    'module': function.__module__,
+                    'function_name': function.__name__,
+                    'request_id': (ms:=get_random_string())
                 }
             })
             # Call client's function
@@ -66,15 +69,11 @@ def flog(function=None, is_route=False):
             response = function(*args, **kwargs)
             end_ts = dt.now()
 
-            logging.info(f'< {f}', extra={
-                'json_fields': {'response': jsonify_payload(response)},
-                'labels': {
-                    'monitor': {
-                        'event_type': 'response',
-                        'function': f,
-                        'matchstr': ms,
-                        'run_time': str(end_ts - start_ts)
-                    }
+            logger.info(f'< {f}', extra={
+                'json_fields': {
+                    'response': jsonify_payload(response),
+                    'request_id': ms,
+                    'run_time': str(end_ts - start_ts)
                 }
             })
 

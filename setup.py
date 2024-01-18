@@ -52,7 +52,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'google-cloud-logging==2.2.0',
+        'google-cloud-logging>=3.0.0',
     ],
     tests_require=[
         'pytest',
