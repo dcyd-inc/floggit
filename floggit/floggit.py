@@ -100,7 +100,7 @@ def jsonify_payload(payload):
         j = []
         for i in payload:
             j.append(jsonify_payload(i))
-        return j if isinstance(payload, list) else tuple(j)
+        return j
     elif type(payload).__name__ == 'Response':
         return jsonify_payload(payload.get_json())
     elif type(payload).__name__ in ['DataFrame', 'Series']:
