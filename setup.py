@@ -53,6 +53,8 @@ setup(
     ],
     install_requires=[
         'google-cloud-logging>=3.0.0',
+        'flask>=3',
+        'networkx>=3'
     ],
     tests_require=[
         'pytest',

@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 google-cloud-logging = ">=3.0.0"
-Flask = "*"
 networkx = "*"
+flask = "*"
 
 [dev-packages]
 setuptools = "*"
