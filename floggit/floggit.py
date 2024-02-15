@@ -106,7 +106,7 @@ def jsonify_payload(payload):
     elif type(payload).__name__ in ['DataFrame', 'Series']:
         return payload.head().to_json(
                 orient='split', default_handler=str, date_format='iso')
-    elif type(payload).__name__ == 'Graph':
+    elif isinstance(payload, nx.Graph):
         return json.dumps(nx.node_link_data(payload))
     elif type(payload).__name__ == 'set':
         return jsonify_payload(list(payload))
