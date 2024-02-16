@@ -96,28 +96,24 @@ def jsonify_payload(payload):
                 key = k
             j[key] = jsonify_payload(v)
         return j
-    elif isinstance(payload, (tuple, list)):
-        j = []
-        for i in payload:
-            j.append(jsonify_payload(i))
-        return j
+    elif type(payload).__name__ == 'ndarray':
+        return jsonify_payload(payload.tolist())
+    elif type(payload).__name__ in ['tuple', 'list']:
+        return [jsonify_payload(i) for i in payload]
     elif type(payload).__name__ == 'Response':
         return jsonify_payload(payload.get_json())
     elif type(payload).__name__ in ['DataFrame', 'Series']:
         return payload.head().to_json(
                 orient='split', default_handler=str, date_format='iso')
     elif isinstance(payload, nx.Graph):
-        return json.dumps(nx.node_link_data(payload))
+        return jsonify_payload(nx.node_link_data(payload))
     elif type(payload).__name__ == 'set':
         return jsonify_payload(list(payload))
-    else: # non-Response atomic type
+    else: # atomic
         try:
-            return jsonify_payload(dict(payload))
+            return json.dumps(payload)
         except:
-            try:
-                return json.dumps(payload)
-            except:
-                return f'Not jsonifiable: {repr(payload)}'
+            return f'Not jsonifiable: {repr(payload)}'
 
 
 def get_random_string(n=10):
