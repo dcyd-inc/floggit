@@ -2,18 +2,17 @@ from datetime import datetime as dt
 import functools
 import inspect
 import json
-import logging
 import os 
-import sys 
-import traceback
-
+from utils import get_random_string
 from flask import request
 import networkx as nx
 
 
-logger = None
+TRACE_ID = get_random_string(n=20)
 
 if os.environ.get("NO_GOOGLE_LOGGING"):
+    import logging, sys, traceback
+
     class LocalFormatter(logging.Formatter):
         def format(self, record):
             tb = traceback.format_exc() if record.__dict__.get('exc_info') is not None else ''
@@ -31,14 +30,19 @@ if os.environ.get("NO_GOOGLE_LOGGING"):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
+
+    def _log(payload, **kw):
+        logger.info(
+                payload.get('message', ''),
+                extra={'json_fields': payload}
+        )
 else:
     import google.cloud.logging
-    from google.cloud.logging_v2.handlers import CloudLoggingHandler
     client = google.cloud.logging.Client()
-    handler = CloudLoggingHandler(client, name='floggit')
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
+    logger = client.logger('floggit')
+
+    def _log(payload, **kw):
+        logger.log_struct(payload, **kw)
 
 
 def flog(function=None, is_route=False):
@@ -49,6 +53,7 @@ def flog(function=None, is_route=False):
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             f = f"{function.__module__}.{function.__name__}"
+
             # Log call of client's function
             if is_route:
                 request_payload = request.args \
@@ -56,26 +61,33 @@ def flog(function=None, is_route=False):
             else:
                 request_payload = bind_function_arguments(
                         signature=function_signature, args=args, kwargs=kwargs)
-            logger.info(f'> {f}', extra={
-                'json_fields': {
+            _log(
+                {
+                    'message': f'> {f}',
                     'args': jsonify_payload(request_payload),
                     'module': function.__module__,
                     'function_name': function.__name__,
                     'request_id': (ms:=get_random_string())
-                }
-            })
+                },
+                severity="INFO",
+                trace=TRACE_ID
+            )
+
             # Call client's function
             start_ts = dt.now()
             response = function(*args, **kwargs)
             end_ts = dt.now()
 
-            logger.info(f'< {f}', extra={
-                'json_fields': {
+            _log(
+                {
+                    'message': f'< {f}',
                     'response': jsonify_payload(response),
                     'request_id': ms,
                     'run_time': str(end_ts - start_ts)
-                }
-            })
+                },
+                severity="INFO",
+                trace=TRACE_ID
+            )
 
             return response
         return wrapper
@@ -114,12 +126,6 @@ def jsonify_payload(payload):
             return json.dumps(payload)
         except:
             return f'Not jsonifiable: {repr(payload)}'
-
-
-def get_random_string(n=10):
-    import string, random
-
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
 
 def bind_function_arguments(*, signature, args, kwargs):
