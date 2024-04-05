@@ -3,10 +3,9 @@ import functools
 import inspect
 import json
 import os 
-from utils import get_random_string
+from . utils import get_random_string
 from flask import request
 import networkx as nx
-
 
 TRACE_ID = get_random_string(n=20)
 
