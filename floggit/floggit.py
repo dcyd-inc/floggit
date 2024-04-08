@@ -124,7 +124,13 @@ def jsonify_payload(payload):
         try:
             return json.dumps(payload)
         except:
-            return f'Not jsonifiable: {repr(payload)}'
+            return json.dumps(
+                {
+                    'msg': 'Object not jsonifiable',
+                    'type': type(payload).__name__,
+                    'repr': repr(payload)
+                }
+            )
 
 
 def bind_function_arguments(*, signature, args, kwargs):
