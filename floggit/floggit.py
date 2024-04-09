@@ -122,15 +122,15 @@ def jsonify_payload(payload):
         return jsonify_payload(list(payload))
     else: # atomic
         try:
-            return json.dumps(payload)
+            json.dumps(payload)
         except:
-            return json.dumps(
-                {
-                    'msg': 'Object not jsonifiable',
-                    'type': type(payload).__name__,
-                    'repr': repr(payload)
-                }
-            )
+            return {
+                'msg': 'Object not jsonifiable',
+                'type': type(payload).__name__,
+                'repr': repr(payload)
+            }
+        else:
+            return payload
 
 
 def bind_function_arguments(*, signature, args, kwargs):
