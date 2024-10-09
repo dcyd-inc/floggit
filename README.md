@@ -12,7 +12,7 @@ client for logging runtime function inputs and outputs
 ### Distributing the package in PyPI
 
 This process comes from [this turorial](https://packaging.python.org/tutorials/packaging-projects/).
-1. Increment the version in `setup.py`, using [these rules](https://www.python.org/dev/peps/pep-0440/) (or newer).
+1. Increment the version in `__init__.py`, using [these rules](https://www.python.org/dev/peps/pep-0440/) (or newer).
 2. Install/update some modules:
 
 ```bash

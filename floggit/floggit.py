@@ -2,15 +2,18 @@ from datetime import datetime as dt
 import functools
 import inspect
 import json
+import logging
 import os 
 from . utils import get_random_string
 from flask import request
 import networkx as nx
+import pydantic
 
-TRACE_ID = get_random_string(n=20)
+
+logger = None
 
 if os.environ.get("NO_GOOGLE_LOGGING"):
-    import logging, sys, traceback
+    import sys, traceback
 
     class LocalFormatter(logging.Formatter):
         def format(self, record):
@@ -26,22 +29,15 @@ if os.environ.get("NO_GOOGLE_LOGGING"):
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(LocalFormatter())
-    logger = logging.getLogger()
+    logger = logging.getLogger('floggit')
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
-
-    def _log(payload, **kw):
-        logger.info(
-                payload.get('message', ''),
-                extra={'json_fields': payload}
-        )
 else:
-    import google.cloud.logging
-    client = google.cloud.logging.Client()
-    logger = client.logger('floggit')
-
-    def _log(payload, **kw):
-        logger.log_struct(payload, **kw)
+    from google.cloud.logging import Client
+    client = Client()
+    client.setup_logging()
+    logger = logging.getLogger('floggit')
+    logger.root.setLevel(logging.INFO)
 
 
 def flog(function=None, is_route=False):
@@ -60,33 +56,28 @@ def flog(function=None, is_route=False):
             else:
                 request_payload = bind_function_arguments(
                         signature=function_signature, args=args, kwargs=kwargs)
-            _log(
-                {
-                    'message': f'> {f}',
+
+            logger.info(f'> {f}', extra={
+                'json_fields': {
                     'args': jsonify_payload(request_payload),
                     'module': function.__module__,
                     'function_name': function.__name__,
                     'request_id': (ms:=get_random_string())
-                },
-                severity="INFO",
-                trace=TRACE_ID
-            )
+                }
+            })
 
             # Call client's function
             start_ts = dt.now()
             response = function(*args, **kwargs)
             end_ts = dt.now()
 
-            _log(
-                {
-                    'message': f'< {f}',
+            logger.info(f'< {f}', extra={
+                'json_fields': {
                     'response': jsonify_payload(response),
                     'request_id': ms,
                     'run_time': str(end_ts - start_ts)
-                },
-                severity="INFO",
-                trace=TRACE_ID
-            )
+                }
+            })
 
             return response
         return wrapper
@@ -120,6 +111,8 @@ def jsonify_payload(payload):
         return jsonify_payload(nx.node_link_data(payload))
     elif type(payload).__name__ == 'set':
         return jsonify_payload(list(payload))
+    elif isinstance(payload, pydantic.BaseModel):
+        return jsonify_payload(payload.dict())
     else: # atomic
         try:
             json.dumps(payload)
