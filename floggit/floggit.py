@@ -6,7 +6,9 @@ import logging
 import os 
 from . utils import get_random_string
 from flask import request
+from flask import Response as FlaskResponse
 import networkx as nx
+from requests import Response as RequestsResponse
 import pydantic
 
 
@@ -102,8 +104,14 @@ def jsonify_payload(payload):
         return jsonify_payload(payload.tolist())
     elif type(payload).__name__ in ['tuple', 'list']:
         return [jsonify_payload(i) for i in payload]
-    elif type(payload).__name__ == 'Response':
-        return jsonify_payload(payload.get_json())
+    elif isinstance(payload, FlaskResponse):
+        return jsonify_payload(payload.response)
+    elif isinstance(payload, RequestsResponse):
+        try:
+            payload = payload.json()
+        except:
+            payload = payload.text
+        return jsonify_payload(payload)
     elif type(payload).__name__ in ['DataFrame', 'Series']:
         return payload.head().to_json(
                 orient='split', default_handler=str, date_format='iso')
@@ -113,6 +121,17 @@ def jsonify_payload(payload):
         return jsonify_payload(list(payload))
     elif isinstance(payload, pydantic.BaseModel):
         return jsonify_payload(payload.dict())
+    elif isinstance(payload, bytes):
+        try:
+            payload = payload.decode('utf-8')
+        except:
+            return {
+                'msg': 'Object not jsonifiable',
+                'type': type(payload).__name__,
+                'repr': repr(payload)
+            }
+        else:
+            return jsonify_payload(payload)
     else: # atomic
         try:
             json.dumps(payload)

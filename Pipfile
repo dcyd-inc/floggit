@@ -8,6 +8,7 @@ google-cloud-logging = ">=3.0.0"
 networkx = "*"
 flask = "*"
 pydantic = "*"
+requests = "*"
 
 [dev-packages]
 setuptools = "*"
